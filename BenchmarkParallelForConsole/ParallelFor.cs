@@ -1,6 +1,7 @@
 ﻿using BenchmarkParallelForConsole.Service;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
+using BenchmarkParallelForConsole.Helper;
 
 namespace BenchmarkParallelForConsole
 {
@@ -8,8 +9,8 @@ namespace BenchmarkParallelForConsole
     [SimpleJob(RunStrategy.ColdStart)]
     public class ParallelFor
     {
-        private const int NumberOfFilesToProcess = 10;
-        private const string FileName = "organizations-10000-1";
+        private const int MaxDegreeOfParallelism = 2;
+        private const int NumberOfFilesToProcess = 10; 
         private const int BatchSaveSize = 250;
 
         [Benchmark]
@@ -18,7 +19,7 @@ namespace BenchmarkParallelForConsole
             Console.WriteLine("Number Of Files To Process = " + NumberOfFilesToProcess + " x 10000");
             Console.WriteLine("Batch Size = " + BatchSaveSize);
 
-            List<string> files = GetFiles(NumberOfFilesToProcess);
+            List<string> files = FileHelper.GetFiles(NumberOfFilesToProcess);
             var organisationImporter = new OrganisationImporter(); 
 
             for (int i = 0; i < files.Count; i++)
@@ -31,7 +32,7 @@ namespace BenchmarkParallelForConsole
         public void ParallelForLoop()
         {
             var organisationImporter = new OrganisationImporter();
-            List<string> files = GetFiles(NumberOfFilesToProcess);
+            List<string> files = FileHelper.GetFiles(NumberOfFilesToProcess);
 
             Parallel.ForEach(files, file =>
             {                
@@ -43,23 +44,12 @@ namespace BenchmarkParallelForConsole
         public async Task ParallelForLoopAsync()
         {
             var organisationImporter = new OrganisationImporter();
-            List<string> files = GetFiles(NumberOfFilesToProcess);             
+            List<string> files = FileHelper.GetFiles(NumberOfFilesToProcess);             
 
-            await Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = 2 }, async (file, cancellationToken) =>
+            await Parallel.ForEachAsync(files, new ParallelOptions { MaxDegreeOfParallelism = MaxDegreeOfParallelism }, async (file, cancellationToken) =>
             { 
                 await organisationImporter.ImportFileAsync(file, BatchSaveSize); 
             }); 
-        }
-                 
-        public List<string> GetFiles(int NumberOfFiles)
-        {
-            List<string> files = new List<string>();             
-            for(int i = 0; i < NumberOfFiles; i++)
-            {
-                files.Add(FileName);
-            }
-
-            return files;
-        }       
+        } 
     }     
 }
